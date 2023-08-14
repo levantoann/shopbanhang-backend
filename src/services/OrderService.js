@@ -139,72 +139,71 @@ const getOrderDetails = (id) => {
 // }
 
 const cancelOrderDetails = (id, data) => {
-    return new Promise(async(resolve, reject) => {
-        try{
-                let order = []
-                const promises = data.map(async(order) => {
-                    const productData = await Product.findOneAndUpdate({
-                        _id: order.product,
-                        selled: {$gte: order.amount}
+    return new Promise(async (resolve, reject) => {
+        try {
+            let order = []
+            const promises = data.map(async (order) => {
+                const productData = await Product.findOneAndUpdate(
+                    {
+                    _id: order.product,
+                    selled: {$gte: order.amount}
                     },
                     {$inc: {
                         countInStock: +order.amount,
                         selled: -order.amount
                     }},
                     {new: true}
-                    )
-                    if(productData) {
-                        order = await Order.findByIdAndDelete(id)
-                        if (order === null){
-                            resolve({
-                               status: 'OK',
-                               message: 'The order is not defined'
-                            })
-                        }
-                    } else {
-                        
+                )
+                if(productData) {
+                    order = await Order.findByIdAndDelete(id)
+                    if (order === null) {
+                        resolve({
+                            status: 'ERR',
+                            message: 'The order is not defined'
+                        })
+                    }
+                } else {
                     return{
                         status: 'OK',
                         message: 'ERR',
                         id: order.product
                     }
-                    }
-                    
-                })
-                const results = await Promise.all(promises)
-                const newData = results && results.filter((item) => item)
-                if(newData.length){
-                    resolve({
-                        status: 'ERR',
-                        message: `Sản phẩm với id ${newData.join(',')} không tồn tại`
-                    })
                 }
+            })
+            const results = await Promise.all(promises)
+            const newData = results && results[0] && results[0].id
+            
+            if(newData) {
                 resolve({
-                    status: 'OK',
-                    message: 'success',
-                    data: order
+                    status: 'ERR',
+                    message: `San pham voi id: ${newData} khong ton tai`
                 })
-        }catch (e) {
+            }
+            resolve({
+                status: 'OK',
+                message: 'success',
+                data: order
+            })
+        } catch (e) {
             reject(e)
         }
     })
 }
 
 const getAllOrder = () => {
-    return new Promise(async(resolve, reject) => {
-        try{
-            const allOrder = await Order.find()
-                resolve({
-                    status: 'OK',
-                    message: 'Success',
-                    data: allOrder
-                })
-        }catch (e) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const allOrder = await Order.find().sort({createdAt: -1, updatedAt: -1})
+            resolve({
+                status: 'OK',
+                message: 'Success',
+                data: allOrder
+            })
+        } catch (e) {
             reject(e)
         }
     })
 }
-
 module.exports = {
     createOrder,
     getAllOrderDetails,
